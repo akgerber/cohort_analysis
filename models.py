@@ -1,15 +1,20 @@
 from peewee import *
 
-database = peewee.SqliteDatabase("customers.db")
+database = SqliteDatabase("customers.db")
 
-class Customer:
+
+class Customer(Model):
     """
     ORM model of customer
     """
     id = IntegerField(primary_key=True)
     created = DateTimeField()
 
-class Order:
+    class Meta:
+        database = database
+
+
+class Order(Model):
     """
     ORM model of order
     """
@@ -17,3 +22,11 @@ class Order:
     order_number = IntegerField()
     user_id = ForeignKeyField(Customer, backref='orders')
     created = DateTimeField()
+
+    class Meta:
+        database = database
+
+
+def create_tables():
+    with database:
+        database.create_tables([Customer, Order])
