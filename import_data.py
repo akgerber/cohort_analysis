@@ -17,7 +17,7 @@ def import_customers(filename:str='customers.csv'):
             }
             pp.pprint(customer)
             customers.append(customer)
-    Customer.insert_many(customers)
+    Customer.insert_many(customers).execute()
 
 
 def import_orders(filename:str='orders.csv'):
@@ -33,7 +33,7 @@ def import_orders(filename:str='orders.csv'):
             }
             pp.pprint(order)
             orders.append(order)
-    Order.insert_many(orders)
+    Order.insert_many(orders).execute()
 
 
 if __name__ == "__main__":

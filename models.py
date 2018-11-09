@@ -8,7 +8,7 @@ class Customer(Model):
     ORM model of customer
     """
     id = IntegerField(primary_key=True)
-    created = DateTimeField()
+    created = DateTimeField(index=True)
 
     class Meta:
         database = database
@@ -21,7 +21,7 @@ class Order(Model):
     id = IntegerField(primary_key=True)
     order_number = IntegerField()
     user_id = ForeignKeyField(Customer, backref='orders')
-    created = DateTimeField()
+    created = DateTimeField(index=True)
 
     class Meta:
         database = database
