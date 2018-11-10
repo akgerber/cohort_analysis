@@ -6,7 +6,16 @@ from datetime import datetime
 pp = pprint.PrettyPrinter()
 
 
-def import_customers(filename:str='customers.csv'):
+def import_all_data(db):
+    with db:
+        db.create_tables([Customer, Order])
+        import_customers()
+        import_orders()
+
+
+def import_customers(filename: str = 'customers.csv'):
+    """Read the customer data in the specified CSV file and insert it in the database
+    """
     customers = []
     with open(filename, newline='') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=',', quotechar='|')
@@ -21,7 +30,9 @@ def import_customers(filename:str='customers.csv'):
     Customer.insert_many(customers).execute()
 
 
-def import_orders(filename:str='orders.csv'):
+def import_orders(filename: str = 'orders.csv'):
+    """Read the order data in the specified CSV file and insert it in the database
+    """
     orders = []
     with open(filename, newline='') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=',', quotechar='|')
@@ -39,9 +50,5 @@ def import_orders(filename:str='orders.csv'):
 
 
 if __name__ == "__main__":
-    with database:
-        database.create_tables([Customer, Order])
-        import_customers()
-        import_orders()
-
+    import_all_data(database)
 
