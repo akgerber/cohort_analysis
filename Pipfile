@@ -9,6 +9,9 @@ arrow = "*"
 
 [dev-packages]
 pytest = "*"
+"pep8" = "*"
+pycodestyle = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.7"

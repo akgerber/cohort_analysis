@@ -26,3 +26,15 @@ class Order(Model):
     class Meta:
         database = database
 
+
+class Cohort:
+    """A weeklong bucket, extending from `start` for 7 days. Not persisted.
+    """
+    def __init__(self, start: arrow):
+        self.start = start
+
+    def get_end(self):
+        return self.start.shift(weeks=+1)
+
+    def __eq__(self, other):
+        return other.start == self.start

@@ -14,7 +14,7 @@ def import_all_data(db):
 
 
 def import_customers(filename: str = 'customers.csv'):
-    """Read the customer data in the specified CSV file and insert it in the database
+    """Read the customer data in the specified CSV file and insert it in the DB
     """
     customers = []
     with open(filename, newline='') as csvfile:
@@ -31,7 +31,7 @@ def import_customers(filename: str = 'customers.csv'):
 
 
 def import_orders(filename: str = 'orders.csv'):
-    """Read the order data in the specified CSV file and insert it in the database
+    """Read the order data in the specified CSV file and insert it in the DB
     """
     orders = []
     with open(filename, newline='') as csvfile:
@@ -51,4 +51,3 @@ def import_orders(filename: str = 'orders.csv'):
 
 if __name__ == "__main__":
     import_all_data(database)
-

@@ -1,20 +1,9 @@
-from datetime import datetime, tzinfo, timedelta
+from datetime import datetime, tzinfo
 import dateutil
 import arrow
-from models import Customer, Order, database
+from models import Customer, Cohort, database
 
 
-class Cohort:
-    """A weeklong bucket, extending from `start` to 7 days beyond
-    """
-    def __init__(self, start: arrow):
-        self.start = start
-
-    def get_end(self):
-        return self.start.shift(weeks=+1)
-
-    def __eq__(self, other):
-        return other.start == self.start
 
 
 def get_cohort_for(dt: datetime, tz: tzinfo = dateutil.tz.gettz('US/Pacific')) -> Cohort:
@@ -47,6 +36,19 @@ def get_end_date() -> datetime:
     return newest.created
 
 
+def get_customers_for(cohort: Cohort):
+    """
+    Get all Customers that are members of a given cohort
+    :param cohort:
+    :return:
+    """
+    startdate = datetime(cohort.start)
+    enddate = datetime(cohort.get_end())
+    customers = Customer.select().where(
+        Customer.created >= startdate & Customer.created <= enddate).get()
+    return customers
+
+
 if __name__ == "__main__":
     with database:
         start = arrow.get(get_start_date())
@@ -63,3 +65,4 @@ if __name__ == "__main__":
             print(f"{startcohort.start} {startcohort.get_end()}")
             cohorts.append(startcohort)
         print(cohorts)
+        [get_customers_for(cohort) for cohort in cohorts]
