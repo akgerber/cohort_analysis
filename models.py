@@ -1,20 +1,24 @@
 from peewee import *
+import arrow
+from peewee import SqliteDatabase
 
 database = SqliteDatabase("customers.db")
 
 
-class Customer(Model):
+class BaseModel(Model):
+    class Meta:
+        database = database
+
+
+class Customer(BaseModel):
     """
     ORM model of customer
     """
     id = IntegerField(primary_key=True)
     created = DateTimeField(index=True)
 
-    class Meta:
-        database = database
 
-
-class Order(Model):
+class Order(BaseModel):
     """
     ORM model of order
     """
@@ -23,11 +27,8 @@ class Order(Model):
     user_id = ForeignKeyField(Customer, backref='orders')
     created = DateTimeField(index=True)
 
-    class Meta:
-        database = database
 
-
-class Cohort:
+class WeekBucket:
     """A weeklong bucket, extending from `start` for 7 days. Not persisted.
     """
     def __init__(self, start: arrow):
