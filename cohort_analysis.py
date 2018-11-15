@@ -45,25 +45,32 @@ if __name__ == "__main__":
         order_analysis = []
         first_order_analysis = []
         orders = service.get_orders_for(cohort_ids)
-        seen = set()
+        ever_seen = set()
         pos = 0
-        print(len(cohort_ids))
         for bucket in buckets:
             order_count = 0
             first_order_count = 0
+            bucket_seen = set()
             bucket_end = bucket.get_end().datetime
             # scan through the orders to find the end of the week bucket
             while pos < len(orders) and \
                     datetime.replace(orders[pos].created, tzinfo=utc) < bucket_end:
-                order_count += 1
-                if orders[pos].user_id not in seen:
+                if orders[pos].user_id not in bucket_seen:
+                    order_count += 1
+                    bucket_seen.add(orders[pos].user_id)
+                if orders[pos].user_id not in ever_seen:
                     first_order_count += 1
-                    seen.add(orders[pos].user_id)
+                    ever_seen.add(orders[pos].user_id)
                 pos += 1
             order_analysis.append(order_count)
             first_order_analysis.append(first_order_count)
+        size = len(cohort_ids)
+        percent = lambda x: "{:.1%}".format(x/size)
+        print(size)
         print(len(order_analysis), order_analysis)
+        print(len(order_analysis), list(map(percent, order_analysis)))
         print(len(first_order_analysis), first_order_analysis)
+        print(len(first_order_analysis), list(map(percent, first_order_analysis)))
         order_analyses.append(order_analysis)
         first_order_analyses.append(first_order_analysis)
     print(order_analyses)
