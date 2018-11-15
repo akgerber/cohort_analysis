@@ -66,12 +66,6 @@ class Service:
         newest = Customer.select().order_by(Customer.created.desc()).get()
         return newest.created
 
-    def get_oldest_order_date(self) -> datetime:
-        """Get the oldest customer's creation date
-        """
-        oldest = Order.select().order_by(Order.created).get()
-        return oldest.created
-
     def get_newest_order_date(self) -> datetime:
         """Get the newest customer's creation date
         """
@@ -113,9 +107,33 @@ class Service:
         startdate = week.start.datetime
         enddate = week.get_end().datetime
         count = Order.select(fn.COUNT(Order.id).alias('orders')).where(
-            (Order.created >= startdate) & (Order.created <= enddate) &
+            (Order.created >= startdate) & (Order.created < enddate) &
             Order.user_id.in_(customers)).get()
         return count.orders
+
+    def get_orders_for(self, customers: [int]) -> {Order}:
+        """
+        Get all orders for a given set of customers
+        :param customers: a set of customer IDs
+        :return: the Orders made
+        """
+        orders = Order.select()\
+            .where(Order.user_id.in_(customers))\
+            .order_by(Order.created)[:]
+        return orders
+
+    def get_first_orders_for(self, customers: [int]) -> {Order}:
+        """
+        Get all orders for a given set of first customers
+        :param customers: a set of customer IDs
+        :return: the Orders made
+        """
+        orders = Order.select(fn.MIN(Order.created).alias('firstorder'), Order.user_id)\
+            .where(Order.user_id.in_(customers))\
+            .distinct()\
+            .order_by(Order.firstorder)[:]
+        return orders
+
 
 """
 The singleton instance
