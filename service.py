@@ -83,34 +83,6 @@ class Service:
             (Customer.created >= startdate) & (Customer.created <= enddate))[:]
         return customers
 
-    def get_orders_for(self, week: WeekBucket, customers: [int]) -> {Order}:
-        """
-        Get all orders for a given set of customers in a given week
-        :param week: the week
-        :param customers: a set of customer IDs
-        :return: the Orders made
-        """
-        startdate = week.start.datetime
-        enddate = week.get_end().datetime
-        orders = Order .select().where(
-            (Order.created >= startdate) & (Order.created <= enddate) &
-            Order.user_id.in_(customers))[:]
-        return orders
-
-    def get_order_count_for(self, week: WeekBucket, customers: [int]) -> int:
-        """
-        Get the count of all orders for a given set of customers in a given week
-        :param week: the week
-        :param customers: a set of customer IDs
-        :return: the count of Orders made
-        """
-        startdate = week.start.datetime
-        enddate = week.get_end().datetime
-        count = Order.select(fn.COUNT(Order.id).alias('orders')).where(
-            (Order.created >= startdate) & (Order.created < enddate) &
-            Order.user_id.in_(customers)).get()
-        return count.orders
-
     def get_orders_for(self, customers: [int]) -> {Order}:
         """
         Get all orders for a given set of customers
@@ -120,18 +92,6 @@ class Service:
         orders = Order.select()\
             .where(Order.user_id.in_(customers))\
             .order_by(Order.created)[:]
-        return orders
-
-    def get_first_orders_for(self, customers: [int]) -> {Order}:
-        """
-        Get all orders for a given set of first customers
-        :param customers: a set of customer IDs
-        :return: the Orders made
-        """
-        orders = Order.select(fn.MIN(Order.created).alias('firstorder'), Order.user_id)\
-            .where(Order.user_id.in_(customers))\
-            .distinct()\
-            .order_by(Order.firstorder)[:]
         return orders
 
 
