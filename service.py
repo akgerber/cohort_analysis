@@ -3,13 +3,14 @@ Singleton service with business logic involving the database
 """
 import csv
 from datetime import datetime
-from peewee import fn
-
 
 from models import WeekBucket, Customer, Order, database
 
 
 class Service:
+    """
+    The singleton service
+    """
     def __init__(self):
         self.database = database
         self.database.connect()
@@ -98,5 +99,4 @@ class Service:
 """
 The singleton instance
 """
-service = Service()
-
+DBSERVICE = Service()

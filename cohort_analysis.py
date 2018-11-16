@@ -2,7 +2,7 @@ from datetime import datetime, tzinfo
 import dateutil
 import arrow
 from models import WeekBucket
-from service import service
+from service import DBSERVICE
 
 
 def get_bucket_for(dt: datetime, tz: tzinfo = dateutil.tz.gettz('US/Pacific'))\
@@ -21,6 +21,12 @@ def get_bucket_for(dt: datetime, tz: tzinfo = dateutil.tz.gettz('US/Pacific'))\
 
 
 def get_buckets_for_range(first: WeekBucket, last: WeekBucket) -> [WeekBucket]:
+    """
+    Get a range of WeekBuckets between first and last
+    :param first: the start of the range
+    :param last: the end of the range
+    :return: WeekBuckets from first to last
+    """
     bucket_range = [first]
     while first != last:
         first = get_bucket_for(first.get_end())
@@ -28,51 +34,56 @@ def get_buckets_for_range(first: WeekBucket, last: WeekBucket) -> [WeekBucket]:
     return bucket_range
 
 
-if __name__ == "__main__":
-    utc = dateutil.tz.gettz('UTC')
-    start = service.get_oldest_customer_date()
-    end = service.get_newest_customer_date()
-    order_end = service.get_newest_order_date()
+def cohort_analysis():
+    """
+    Do a cohort analysis
+    :return:
+    """
+    start = DBSERVICE.get_oldest_customer_date()
+    end = DBSERVICE.get_newest_customer_date()
+    order_end = DBSERVICE.get_newest_order_date()
     first_cohort = get_bucket_for(start)
     last_cohort = get_bucket_for(end)
     last_order_bucket = get_bucket_for(order_end)
     cohorts = get_buckets_for_range(first_cohort, last_cohort)
-    order_analyses = []
-    first_order_analyses = []
     for cohort in cohorts:
-        cohort_ids = service.get_new_customer_ids_for(cohort)
-        buckets = get_buckets_for_range(cohort, last_order_bucket)
-        order_analysis = []
-        first_order_analysis = []
-        orders = service.get_orders_for(cohort_ids)
-        ever_seen = set()
-        pos = 0
-        for bucket in buckets:
-            order_count = 0
-            first_order_count = 0
-            bucket_seen = set()
-            bucket_end = bucket.get_end().datetime
-            # scan through the orders to find the end of the week bucket
-            while pos < len(orders) and \
-                    datetime.replace(orders[pos].created, tzinfo=utc) < bucket_end:
-                if orders[pos].user_id not in bucket_seen:
-                    order_count += 1
-                    bucket_seen.add(orders[pos].user_id)
-                if orders[pos].user_id not in ever_seen:
-                    first_order_count += 1
-                    ever_seen.add(orders[pos].user_id)
-                pos += 1
-            order_analysis.append(order_count)
-            first_order_analysis.append(first_order_count)
-        size = len(cohort_ids)
-        percent = lambda x: "{:.1%}".format(x/size)
-        print(size)
-        print(len(order_analysis), order_analysis)
-        print(len(order_analysis), list(map(percent, order_analysis)))
-        print(len(first_order_analysis), first_order_analysis)
-        print(len(first_order_analysis), list(map(percent, first_order_analysis)))
-        order_analyses.append(order_analysis)
-        first_order_analyses.append(first_order_analysis)
-    print(order_analyses)
-    print(first_order_analyses)
-    print()
+        process_cohort(cohort, last_order_bucket)
+
+
+def process_cohort(cohort: WeekBucket, last_order_bucket: WeekBucket):
+    utc = dateutil.tz.gettz('UTC')
+    cohort_ids = DBSERVICE.get_new_customer_ids_for(cohort)
+    buckets = get_buckets_for_range(cohort, last_order_bucket)
+    order_analysis = []
+    first_order_analysis = []
+    orders = DBSERVICE.get_orders_for(cohort_ids)
+    ever_seen = set()
+    pos = 0
+    for bucket in buckets:
+        order_count = 0
+        first_order_count = 0
+        bucket_seen = set()
+        bucket_end = bucket.get_end().datetime
+        # scan through the orders to find the end of the week bucket
+        while pos < len(orders) and \
+                datetime.replace(orders[pos].created, tzinfo=utc) < bucket_end:
+            if orders[pos].user_id not in bucket_seen:
+                order_count += 1
+                bucket_seen.add(orders[pos].user_id)
+            if orders[pos].user_id not in ever_seen:
+                first_order_count += 1
+                ever_seen.add(orders[pos].user_id)
+            pos += 1
+        order_analysis.append(order_count)
+        first_order_analysis.append(first_order_count)
+    size = len(cohort_ids)
+    percent = lambda x: "{:.1%}".format(x/size)
+    print(size)
+    print(len(order_analysis), order_analysis)
+    print(len(order_analysis), list(map(percent, order_analysis)))
+    print(len(first_order_analysis), first_order_analysis)
+    print(len(first_order_analysis), list(map(percent, first_order_analysis)))
+
+
+if __name__ == "__main__":
+    cohort_analysis()

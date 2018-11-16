@@ -1,6 +1,9 @@
-from peewee import *
+"""
+Models of domain objects
+"""
 import arrow
-from peewee import SqliteDatabase
+from peewee import SqliteDatabase, Model, IntegerField, ForeignKeyField, \
+    DateTimeField
 
 database = SqliteDatabase("customers.db")
 
