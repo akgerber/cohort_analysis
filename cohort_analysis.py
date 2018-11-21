@@ -60,8 +60,8 @@ def analyze_cohort(cohort: WeekBucket, last_order_bucket: WeekBucket) -> [str]:
     cohort_ids = DBSERVICE.get_new_customer_ids_for(cohort)
     buckets = get_buckets_for_range(cohort, last_order_bucket)
 
-    result["cohort"] = f"{cohort.start} - {cohort.get_end()}"
-    result["customers"] = f"{len(cohort_ids)} customers"
+    result["Cohort"] = f"{cohort.start} - {cohort.get_end()}"
+    result["Customers"] = f"{len(cohort_ids)} customers"
 
     orders = DBSERVICE.get_orders_for(cohort_ids)
     ever_seen = set()
@@ -84,7 +84,8 @@ def analyze_cohort(cohort: WeekBucket, last_order_bucket: WeekBucket) -> [str]:
                 first_order_count += 1
                 ever_seen.add(orders[pos].user_id)
             pos += 1
-        result[f"week{i+1}"] = (f"{percent(order_count)} orderers ({order_count})\n"
+        week = f"{i*7}-{(i+1)*7-1} days"
+        result[week] = (f"{percent(order_count)} orderers ({order_count})\n"
             f"{percent(first_order_count)} 1st time ({first_order_count})")
     print(result)
     return result
@@ -103,13 +104,14 @@ def cohort_analysis():
     last_order_bucket = get_bucket_for(order_end)
     cohorts = get_buckets_for_range(first_cohort, last_cohort)
     with open('analysis.csv', 'w') as csvfile:
-        weekfields = [ f"week{x}" for x in list(range(1, len(cohorts) + 1))]
-        fieldnames = ['cohort', 'customers'] + weekfields
+        weekfields = \
+            [f"{i*7}-{(i+1)*7-1} days" for i in list(range(0, len(cohorts)))]
+        fieldnames = ['Cohort', 'Customers'] + weekfields
         writer = csv.DictWriter(csvfile, fieldnames)
-        for i in range(len(cohorts)):
+        writer.writeheader()
+        for i in range(len(cohorts)-1, -1, -1):
             row = analyze_cohort(cohorts[i], last_order_bucket)
             writer.writerow(row)
-
 
 
 if __name__ == "__main__":
