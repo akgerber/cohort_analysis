@@ -24,7 +24,7 @@ class Service:
         self.import_orders()
 
     def import_customers(self, filename: str = 'customers.csv'):
-        """Read the customer data in the specified CSV file and insert it in the DB
+        """Read the customer data in the CSV file and insert it in the DB
         """
         customers = []
         with open(filename, newline='') as csvfile:
@@ -39,7 +39,7 @@ class Service:
         Customer.insert_many(customers).execute()
 
     def import_orders(self, filename: str = 'orders.csv'):
-        """Read the order data in the specified CSV file and insert it in the DB
+        """Read the order data in the CSV file and insert it in the DB
         """
         orders = []
         with open(filename, newline='') as csvfile:

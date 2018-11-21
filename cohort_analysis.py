@@ -1,6 +1,8 @@
 from datetime import datetime, tzinfo
-import dateutil
+import csv
 import arrow
+import dateutil
+from typing import Callable
 from models import WeekBucket
 from service import DBSERVICE
 
@@ -34,32 +36,40 @@ def get_buckets_for_range(first: WeekBucket, last: WeekBucket) -> [WeekBucket]:
     return bucket_range
 
 
-def cohort_analysis():
+def percent_of(of: int) -> Callable:
     """
-    Do a cohort analysis
-    :return:
+    Enclose the printing of a percentage
+    :param of: what you're taking a percentage of
+    :return: a closure that prints a percentage of of
     """
-    start = DBSERVICE.get_oldest_customer_date()
-    end = DBSERVICE.get_newest_customer_date()
-    order_end = DBSERVICE.get_newest_order_date()
-    first_cohort = get_bucket_for(start)
-    last_cohort = get_bucket_for(end)
-    last_order_bucket = get_bucket_for(order_end)
-    cohorts = get_buckets_for_range(first_cohort, last_cohort)
-    for cohort in cohorts:
-        process_cohort(cohort, last_order_bucket)
+    def percentage(x: int) -> str:
+        return "{:.1%}".format(x/of)
+    return percentage
 
 
-def process_cohort(cohort: WeekBucket, last_order_bucket: WeekBucket):
+def analyze_cohort(cohort: WeekBucket, last_order_bucket: WeekBucket) -> [str]:
+    """
+    Process a given weekbucket's cohort for the cohort analysis
+    :param cohort:
+    :param last_order_bucket:
+    :return: A list of strings of analysis: the first entry is a date,
+        the 2nd the # of customers, the following containing analysis by week
+    """
+    result = {}
     utc = dateutil.tz.gettz('UTC')
     cohort_ids = DBSERVICE.get_new_customer_ids_for(cohort)
     buckets = get_buckets_for_range(cohort, last_order_bucket)
-    order_analysis = []
-    first_order_analysis = []
+
+    result["cohort"] = f"{cohort.start} - {cohort.get_end()}"
+    result["customers"] = f"{len(cohort_ids)} customers"
+
     orders = DBSERVICE.get_orders_for(cohort_ids)
     ever_seen = set()
     pos = 0
-    for bucket in buckets:
+    percent = percent_of(len(cohort_ids))
+
+    for i in range(len(buckets)):
+        bucket = buckets[i]
         order_count = 0
         first_order_count = 0
         bucket_seen = set()
@@ -74,15 +84,32 @@ def process_cohort(cohort: WeekBucket, last_order_bucket: WeekBucket):
                 first_order_count += 1
                 ever_seen.add(orders[pos].user_id)
             pos += 1
-        order_analysis.append(order_count)
-        first_order_analysis.append(first_order_count)
-    size = len(cohort_ids)
-    percent = lambda x: "{:.1%}".format(x/size)
-    print(size)
-    print(len(order_analysis), order_analysis)
-    print(len(order_analysis), list(map(percent, order_analysis)))
-    print(len(first_order_analysis), first_order_analysis)
-    print(len(first_order_analysis), list(map(percent, first_order_analysis)))
+        result[f"week{i+1}"] = (f"{percent(order_count)} orderers ({order_count})\n"
+            f"{percent(first_order_count)} 1st time ({first_order_count})")
+    print(result)
+    return result
+
+
+def cohort_analysis():
+    """
+    Do a cohort analysis
+    :return:
+    """
+    start = DBSERVICE.get_oldest_customer_date()
+    end = DBSERVICE.get_newest_customer_date()
+    order_end = DBSERVICE.get_newest_order_date()
+    first_cohort = get_bucket_for(start)
+    last_cohort = get_bucket_for(end)
+    last_order_bucket = get_bucket_for(order_end)
+    cohorts = get_buckets_for_range(first_cohort, last_cohort)
+    with open('analysis.csv', 'w') as csvfile:
+        weekfields = [ f"week{x}" for x in list(range(1, len(cohorts) + 1))]
+        fieldnames = ['cohort', 'customers'] + weekfields
+        writer = csv.DictWriter(csvfile, fieldnames)
+        for i in range(len(cohorts)):
+            row = analyze_cohort(cohorts[i], last_order_bucket)
+            writer.writerow(row)
+
 
 
 if __name__ == "__main__":
