@@ -1,24 +1,33 @@
+"""
+Script to execute a cohort analysis
+"""
 from datetime import datetime, tzinfo
+from typing import Callable
 import csv
+import logging
+
 import arrow
 import dateutil
-from typing import Callable
+
 from models import WeekBucket
 from service import DBSERVICE
 
+ANALYSIS_FILE = 'analysis.csv'
 
-def get_bucket_for(dt: datetime, tz: tzinfo = dateutil.tz.gettz('US/Pacific'))\
+
+def get_bucket_for(date_time: datetime,
+                   timezone: tzinfo = dateutil.tz.gettz('US/Pacific'))\
         -> WeekBucket:
     """
     Place a datetime in a weeklong cohort (with weeks starting/ending in the specified timezone)
-    :param dt: a datetime
-    :param tz: the timezone used to determine week boundaries
+    :param date_time: a datetime
+    :param timezone: the timezone used to determine week boundaries
     :return: a Cohort including the datetime
     """
     # use Arrow library as builtin datetime doesn't support DST changing over time
-    as_tz = arrow.get(dt).to(tz)
+    as_tz = arrow.get(date_time).to(timezone)
     iso = as_tz.isocalendar()
-    cohort_start = arrow.Arrow.strptime(f"{iso[0]}|{iso[1]}"+"|1", "%G|%V|%u", tz)
+    cohort_start = arrow.Arrow.strptime(f"{iso[0]}|{iso[1]}" +"|1", "%G|%V|%u", timezone)
     return WeekBucket(cohort_start)
 
 
@@ -36,14 +45,14 @@ def get_buckets_for_range(first: WeekBucket, last: WeekBucket) -> [WeekBucket]:
     return bucket_range
 
 
-def percent_of(of: int) -> Callable:
+def percent_of(of_what: int) -> Callable:
     """
     Enclose the printing of a percentage
-    :param of: what you're taking a percentage of
+    :param of_what: what you're taking a percentage of
     :return: a closure that prints a percentage of of
     """
     def percentage(x: int) -> str:
-        return "{:.1%}".format(x/of)
+        return "{:.1%}".format(x / of_what)
     return percentage
 
 
@@ -68,8 +77,7 @@ def analyze_cohort(cohort: WeekBucket, last_order_bucket: WeekBucket) -> [str]:
     pos = 0
     percent = percent_of(len(cohort_ids))
 
-    for i in range(len(buckets)):
-        bucket = buckets[i]
+    for i, bucket in enumerate(buckets):
         order_count = 0
         first_order_count = 0
         bucket_seen = set()
@@ -86,8 +94,8 @@ def analyze_cohort(cohort: WeekBucket, last_order_bucket: WeekBucket) -> [str]:
             pos += 1
         week = f"{i*7}-{(i+1)*7-1} days"
         result[week] = (f"{percent(order_count)} orderers ({order_count})\n"
-            f"{percent(first_order_count)} 1st time ({first_order_count})")
-    print(result)
+                        f"{percent(first_order_count)} "
+                        f"1st time ({first_order_count})")
     return result
 
 
@@ -96,6 +104,7 @@ def cohort_analysis():
     Do a cohort analysis
     :return:
     """
+    DBSERVICE.logger.setLevel(logging.INFO)
     start = DBSERVICE.get_oldest_customer_date()
     end = DBSERVICE.get_newest_customer_date()
     order_end = DBSERVICE.get_newest_order_date()
@@ -103,7 +112,7 @@ def cohort_analysis():
     last_cohort = get_bucket_for(end)
     last_order_bucket = get_bucket_for(order_end)
     cohorts = get_buckets_for_range(first_cohort, last_cohort)
-    with open('analysis.csv', 'w') as csvfile:
+    with open(ANALYSIS_FILE, 'w') as csvfile:
         weekfields = \
             [f"{i*7}-{(i+1)*7-1} days" for i in list(range(0, len(cohorts)))]
         fieldnames = ['Cohort', 'Customers'] + weekfields
@@ -112,7 +121,9 @@ def cohort_analysis():
         for i in range(len(cohorts)-1, -1, -1):
             row = analyze_cohort(cohorts[i], last_order_bucket)
             writer.writerow(row)
+    DBSERVICE.logger.info(f"Writing analysis to {ANALYSIS_FILE}")
 
 
 if __name__ == "__main__":
+    DBSERVICE.import_all_data()
     cohort_analysis()

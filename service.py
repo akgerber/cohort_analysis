@@ -2,9 +2,14 @@
 Singleton service with business logic involving the database
 """
 import csv
+import logging
 from datetime import datetime
+from peewee import IntegrityError
 
-from models import WeekBucket, Customer, Order, database
+from models import WeekBucket, Customer, Order, DATABASE
+
+DEFAULT_CUSTOMER_FILE = 'customers.csv'
+DEFAULT_ORDER_FILE = 'orders.csv'
 
 
 class Service:
@@ -12,18 +17,27 @@ class Service:
     The singleton service
     """
     def __init__(self):
-        self.database = database
+        self.logger = logging.getLogger("invitae_db")
+        self.database = DATABASE
         self.database.connect()
 
     def __del__(self):
         self.database.close()
 
     def import_all_data(self):
-        self.database.create_tables([Customer, Order])
-        self.import_customers()
-        self.import_orders()
+        """
+        Import all CSV data to a SQLLite database
+        :return:
+        """
+        try:
+            self.database.create_tables([Customer, Order])
+            self.import_customers()
+            self.import_orders()
+        except IntegrityError:
+            self.logger.info("Skipping import step -- data already imported")
 
-    def import_customers(self, filename: str = 'customers.csv'):
+
+    def import_customers(self, filename: str = DEFAULT_CUSTOMER_FILE):
         """Read the customer data in the CSV file and insert it in the DB
         """
         customers = []
@@ -38,7 +52,7 @@ class Service:
 
         Customer.insert_many(customers).execute()
 
-    def import_orders(self, filename: str = 'orders.csv'):
+    def import_orders(self, filename: str = DEFAULT_ORDER_FILE):
         """Read the order data in the CSV file and insert it in the DB
         """
         orders = []

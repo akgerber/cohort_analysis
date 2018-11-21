@@ -5,12 +5,12 @@ import arrow
 from peewee import SqliteDatabase, Model, IntegerField, ForeignKeyField, \
     DateTimeField
 
-database = SqliteDatabase("customers.db")
+DATABASE = SqliteDatabase("customers.db")
 
 
 class BaseModel(Model):
     class Meta:
-        database = database
+        database = DATABASE
 
 
 class Customer(BaseModel):
