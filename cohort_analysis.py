@@ -56,13 +56,13 @@ def percent_of(of_what: int) -> Callable:
     return percentage
 
 
-def analyze_cohort(cohort: WeekBucket, last_order_bucket: WeekBucket) -> [str]:
+def analyze_cohort(cohort: WeekBucket, last_order_bucket: WeekBucket) \
+        -> {str: str}:
     """
     Process a given weekbucket's cohort for the cohort analysis
     :param cohort:
     :param last_order_bucket:
-    :return: A list of strings of analysis: the first entry is a date,
-        the 2nd the # of customers, the following containing analysis by week
+    :return: A dictionary of strings of analysis
     """
     result = {}
     utc = dateutil.tz.gettz('UTC')
@@ -121,7 +121,7 @@ def cohort_analysis():
         for i in range(len(cohorts)-1, -1, -1):
             row = analyze_cohort(cohorts[i], last_order_bucket)
             writer.writerow(row)
-    DBSERVICE.logger.info(f"Writing analysis to {ANALYSIS_FILE}")
+    DBSERVICE.logger.info("Writing analysis to %s", ANALYSIS_FILE)
 
 
 if __name__ == "__main__":
