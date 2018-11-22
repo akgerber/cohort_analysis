@@ -36,29 +36,45 @@ class Service:
         except IntegrityError:
             self.logger.info("Skipping import step -- data already imported")
 
-
-    def import_customers(self, filename: str = DEFAULT_CUSTOMER_FILE):
-        """Read the customer data in the CSV file and insert it in the DB
+    def import_customers(self, filename: str = DEFAULT_CUSTOMER_FILE,
+                         insert_batch_size: int = 25000):
+        """
+        Read the customer data in the CSV file and insert it in the DB
+        :param filename: The CSV file to import customers from
+        :param insert_batch_size: how many rows to insert at once: default 25000
+        :return:
         """
         customers = []
         with open(filename, newline='') as csvfile:
             reader = csv.DictReader(csvfile, delimiter=',', quotechar='|')
-            for row in reader:
+            for i, row in enumerate(reader):
+                if i > 0 and i % insert_batch_size == 0:
+                    Customer.insert_many(customers).execute()
+                    customers = []
                 customer = {
                     'id': int(row['id']),
                     'created': datetime.strptime(row['created'], "%Y-%m-%d %X"),
                 }
                 customers.append(customer)
 
-        Customer.insert_many(customers).execute()
+        if len(customers) > 0:
+            Customer.insert_many(customers).execute()
 
-    def import_orders(self, filename: str = DEFAULT_ORDER_FILE):
-        """Read the order data in the CSV file and insert it in the DB
+    def import_orders(self, filename: str = DEFAULT_ORDER_FILE,
+                      insert_batch_size: int = 25000):
+        """
+        Read the order data in the CSV file and insert it in the DB
+        :param filename: The CSV file to import orders from
+        :param insert_batch_size: how many rows to insert at once: default 25000
+        :return:
         """
         orders = []
         with open(filename, newline='') as csvfile:
             reader = csv.DictReader(csvfile, delimiter=',', quotechar='|')
-            for row in reader:
+            for i, row in enumerate(reader):
+                if i > 0 and i % insert_batch_size == 0:
+                    Order.insert_many(orders).execute()
+                    orders = []
                 order = {
                     'id': int(row['id']),
                     'order_number': int(row['order_number']),
@@ -66,8 +82,8 @@ class Service:
                     'created': datetime.strptime(row['created'], "%Y-%m-%d %X"),
                 }
                 orders.append(order)
-
-        Order.insert_many(orders).execute()
+        if len(orders) > 0:
+            Order.insert_many(orders).execute()
 
     def get_oldest_customer_date(self) -> datetime:
         """Get the oldest customer's creation date
