@@ -24,6 +24,21 @@ This outputs a CSV to stdout-- tee or pipe to a file to save, e.g.
 pipenv run python cohort_analysis.py | tee analysis.csv
 ```
 
+## Docker
+
+This project can also be Dockerized. Build with:
+```bash
+docker build . --tag "cohort_analysis"
+```
+Run with:
+```bash
+docker run cohort_analysis | tee cohort_analysis.csv
+```
+Test with:
+```bash
+docker run cohort_analysis pipenv run py.test
+```
+
 ## Testing
 ```bash
 pipenv install --dev
