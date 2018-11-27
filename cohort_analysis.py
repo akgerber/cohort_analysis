@@ -5,6 +5,7 @@ from datetime import datetime, tzinfo
 from typing import Callable
 import csv
 import logging
+import sys
 
 import arrow
 import dateutil
@@ -112,15 +113,14 @@ def cohort_analysis():
     last_cohort = get_bucket_for(end)
     last_order_bucket = get_bucket_for(order_end)
     cohorts = get_buckets_for_range(first_cohort, last_cohort)
-    with open(ANALYSIS_FILE, 'w') as csvfile:
-        weekfields = \
-            [f"{i*7}-{(i+1)*7-1} days" for i in list(range(0, len(cohorts)))]
-        fieldnames = ['Cohort', 'Customers'] + weekfields
-        writer = csv.DictWriter(csvfile, fieldnames)
-        writer.writeheader()
-        for i in range(len(cohorts)-1, -1, -1):
-            row = analyze_cohort(cohorts[i], last_order_bucket)
-            writer.writerow(row)
+    weekfields = \
+        [f"{i*7}-{(i+1)*7-1} days" for i in list(range(0, len(cohorts)))]
+    fieldnames = ['Cohort', 'Customers'] + weekfields
+    writer = csv.DictWriter(sys.stdout, fieldnames)
+    writer.writeheader()
+    for i in range(len(cohorts)-1, -1, -1):
+        row = analyze_cohort(cohorts[i], last_order_bucket)
+        writer.writerow(row)
     DBSERVICE.logger.info("Writing analysis to %s", ANALYSIS_FILE)
 
 

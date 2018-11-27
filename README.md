@@ -19,6 +19,10 @@ pipenv install
 ```bash
 pipenv run python cohort_analysis.py
 ```
+This outputs a CSV to stdout-- tee or pipe to a file to save, e.g. 
+```bash
+pipenv run python cohort_analysis.py | tee analysis.csv
+```
 
 ## Testing
 ```bash
